@@ -1,0 +1,53 @@
+#!/usr/bin/env perl
+# -*- mode:perl; -*-
+
+use strict;
+use XML::Feed;
+use URI;
+use Data::Dumper;
+use utf8;
+
+binmode STDOUT, ":utf8";
+
+if ($ARGV[0] eq 'config') {
+    print << 'EOF';
+graph_title atomosphere temparature
+graph_args --base 1000
+graph_vlabel celsius
+graph_category other
+graph_info This graph shows atomosphere temparature
+temp.label Celsius
+temp.draw LINE2
+temp.type GAUGE
+temp.info temp
+EOF
+    exit 0;
+}
+
+my $xmlfile = $ENV{'outfile'} || "/tmp/atomtemp.xml";
+
+if ($ARGV[0] eq 'cron') {
+    sleep int(rand(300));
+}
+if (($ARGV[0] eq 'cron') || ($ARGV[0] eq 'fetch')) {
+    my $url = $ARGV[1] or die;
+    my $wgetcmd = $ENV{'wgetcmd'} || "/usr/local/bin/wget -q -t 5 -O ':OUTFILE:.tmp' ':URL:'";
+    $wgetcmd =~ s/:OUTFILE:/$xmlfile/g;
+    $wgetcmd =~ s/:URL:/$url/g;
+    system($wgetcmd);
+    rename $xmlfile.".tmp", $xmlfile;
+    exit 0;
+}
+
+my $url = $ENV{'atomtemp_url'} || 'file://'.$xmlfile;
+my $feed = XML::Feed->parse(URI->new($url));
+
+for my $item ($feed->entries) {
+    #print Data::Dumper::Dumper([ $item ]) . "\n";
+    #print $item->title, "\n";
+    if ($item->title =~ m/気温.*[^-0-9.]([-0-9.]+)/) {
+	print "temp.value " . $1 . "\n";
+	exit 0;
+    }
+}
+print "temp.value U\n";

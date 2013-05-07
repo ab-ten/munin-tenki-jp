@@ -4,7 +4,7 @@
 use strict;
 use XML::Feed;
 use URI;
-use Data::Dumper;
+#use Data::Dumper;
 use utf8;
 
 binmode STDOUT, ":utf8";
